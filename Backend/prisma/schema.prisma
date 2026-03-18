@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model auditoria {
+  id_auditoria        Int       @id @default(autoincrement())
+  id_cliente          Int
+  entidade            String?   @db.VarChar(80)
+  entidade_id         Int?
+  acao                String?   @db.VarChar(50)
+  usuario_executor_id Int?
+  user_agent          String?
+  ip_origem           String?   @db.VarChar(50)
+  detalhes            Json?
+  created_at          DateTime? @default(now()) @db.Timestamp(6)
+  cliente             cliente   @relation(fields: [id_cliente], references: [id_cliente], onDelete: NoAction, onUpdate: NoAction, map: "fk_auditoria_cliente")
+}
+
+model cliente {
+  id_cliente       Int               @id @default(autoincrement())
+  nome_empresa     String            @db.VarChar(150)
+  email_contato    String?           @db.VarChar(150)
+  telefone_contato String?           @db.VarChar(30)
+  plano            String?           @db.VarChar(50)
+  status_cliente   String?           @db.VarChar(30)
+  created_at       DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?         @default(now()) @db.Timestamp(6)
+  auditoria        auditoria[]
+  conversa         conversa[]
+  faq_knowledge    faq_knowledge[]
+  feedback         feedback[]
+  instrucao_ia     instrucao_ia[]
+  mensagem         mensagem[]
+  produto_servico  produto_servico[]
+  status_conversa  status_conversa[]
+  usuario          usuario[]
+}
+
+model conversa {
+  id_conversa              Int               @id @default(autoincrement())
+  id_cliente               Int
+  id_usuario               Int
+  id_usuario_canal         Int
+  external_conversation_id String?           @db.VarChar(120)
+  plataforma               String?           @db.VarChar(30)
+  status_conversa          String?           @db.VarChar(30)
+  origem                   String?           @db.VarChar(50)
+  assunto_resumido         String?
+  lead_status              String?           @db.VarChar(30)
+  handoff_humano           Boolean?          @default(false)
+  data_hora_inicio         DateTime?         @default(now()) @db.Timestamp(6)
+  ultima_interacao_em      DateTime?         @db.Timestamp(6)
+  data_hora_fim            DateTime?         @db.Timestamp(6)
+  id_sessao_bot            String?           @db.VarChar(120)
+  created_at               DateTime?         @default(now()) @db.Timestamp(6)
+  cliente                  cliente           @relation(fields: [id_cliente], references: [id_cliente], onDelete: NoAction, onUpdate: NoAction, map: "fk_conversa_cliente")
+  usuario                  usuario           @relation(fields: [id_usuario], references: [id_usuario], onDelete: NoAction, onUpdate: NoAction, map: "fk_conversa_usuario")
+  usuario_canal            usuario_canal     @relation(fields: [id_usuario_canal], references: [id_usuario_canal], onDelete: NoAction, onUpdate: NoAction, map: "fk_conversa_usuario_canal")
+  feedback                 feedback[]
+  mensagem                 mensagem[]
+  status_conversa          status_conversa[]
+}
+
+model faq_knowledge {
+  id_knowledge    Int       @id @default(autoincrement())
+  id_cliente      Int
+  pergunta        String?
+  resposta        String?
+  tags            String?
+  prioridade      Int?
+  origem_conteudo String?   @db.VarChar(100)
+  status_item     String?   @db.VarChar(30)
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+  updated_at      DateTime? @default(now()) @db.Timestamp(6)
+  cliente         cliente   @relation(fields: [id_cliente], references: [id_cliente], onDelete: NoAction, onUpdate: NoAction, map: "fk_faq_cliente")
+}
+
+model feedback {
+  id_feedback       Int       @id @default(autoincrement())
+  id_cliente        Int
+  id_conversa       Int
+  nota_sucesso      Int?
+  comentario        String?
+  origem_feedback   String?   @db.VarChar(50)
+  classificado_como String?   @db.VarChar(30)
+  data_feedback     DateTime? @default(now()) @db.Timestamp(6)
+  created_at        DateTime? @default(now()) @db.Timestamp(6)
+  cliente           cliente   @relation(fields: [id_cliente], references: [id_cliente], onDelete: NoAction, onUpdate: NoAction, map: "fk_feedback_cliente")
+  conversa          conversa  @relation(fields: [id_conversa], references: [id_conversa], onDelete: NoAction, onUpdate: NoAction, map: "fk_feedback_conversa")
+}
+
+model instrucao_ia {
+  id_instrucao_ia       Int       @id @default(autoincrement())
+  id_cliente            Int
+  nome_instrucao        String?   @db.VarChar(120)
+  descricao             String?
+  prompt_base           String?
+  parametros_adicionais Json?
+  versao_instrucao      String?   @db.VarChar(20)
+  status_instrucao      String?   @db.VarChar(30)
+  created_at            DateTime? @default(now()) @db.Timestamp(6)
+  updated_at            DateTime? @default(now()) @db.Timestamp(6)
+  cliente               cliente   @relation(fields: [id_cliente], references: [id_cliente], onDelete: NoAction, onUpdate: NoAction, map: "fk_instrucao_cliente")
+}
+
+model mensagem {
+  id_mensagem        Int       @id @default(autoincrement())
+  id_cliente         Int
+  id_conversa        Int
+  tipo_remetente     String?   @db.VarChar(30)
+  tipo_conteudo      String?   @db.VarChar(30)
+  conteudo_mensagem  String?
+  hash_conteudo      String?   @db.VarChar(255)
+  token_count_input  Int?
+  token_count_output Int?
+  modelo_ia_usado    String?   @db.VarChar(80)
+  custo_estimado     Decimal?  @db.Decimal(10, 4)
+  data_hora_envio    DateTime? @default(now()) @db.Timestamp(6)
+  created_at         DateTime? @default(now()) @db.Timestamp(6)
+  cliente            cliente   @relation(fields: [id_cliente], references: [id_cliente], onDelete: NoAction, onUpdate: NoAction, map: "fk_mensagem_cliente")
+  conversa           conversa  @relation(fields: [id_conversa], references: [id_conversa], onDelete: NoAction, onUpdate: NoAction, map: "fk_mensagem_conversa")
+}
+
+model produto_servico {
+  id_produto_servico Int       @id @default(autoincrement())
+  id_cliente         Int
+  nome               String    @db.VarChar(120)
+  descricao          String?
+  categoria          String?   @db.VarChar(80)
+  preco              Decimal?  @db.Decimal(10, 2)
+  moeda              String?   @db.VarChar(10)
+  link_venda         String?
+  status_produto     String?   @db.VarChar(30)
+  created_at         DateTime? @default(now()) @db.Timestamp(6)
+  updated_at         DateTime? @default(now()) @db.Timestamp(6)
+  cliente            cliente   @relation(fields: [id_cliente], references: [id_cliente], onDelete: NoAction, onUpdate: NoAction, map: "fk_produto_cliente")
+}
+
+model status_conversa {
+  id_status_log     Int       @id @default(autoincrement())
+  id_cliente        Int
+  id_conversa       Int
+  status_anterior   String?   @db.VarChar(30)
+  status_novo       String?   @db.VarChar(30)
+  alterado_por_tipo String?   @db.VarChar(30)
+  alterado_por_id   Int?
+  motivo_alteracao  String?
+  updated_at        DateTime? @default(now()) @db.Timestamp(6)
+  cliente           cliente   @relation(fields: [id_cliente], references: [id_cliente], onDelete: NoAction, onUpdate: NoAction, map: "fk_status_cliente")
+  conversa          conversa  @relation(fields: [id_conversa], references: [id_conversa], onDelete: NoAction, onUpdate: NoAction, map: "fk_status_conversa")
+}
+
+model usuario {
+  id_usuario     Int             @id @default(autoincrement())
+  id_cliente     Int
+  nome           String          @db.VarChar(120)
+  email          String?         @db.VarChar(150)
+  telefone       String?         @db.VarChar(30)
+  tipo_usuario   String?         @db.VarChar(30)
+  status_usuario String?         @db.VarChar(30)
+  created_at     DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at     DateTime?       @default(now()) @db.Timestamp(6)
+  conversa       conversa[]
+  cliente        cliente         @relation(fields: [id_cliente], references: [id_cliente], onDelete: NoAction, onUpdate: NoAction, map: "fk_usuario_cliente")
+  usuario_canal  usuario_canal[]
+}
+
+model usuario_canal {
+  id_usuario_canal  Int        @id @default(autoincrement())
+  id_usuario        Int
+  plataforma        String     @db.VarChar(30)
+  external_user_id  String?    @db.VarChar(120)
+  external_username String?    @db.VarChar(120)
+  external_chat_id  String?    @db.VarChar(120)
+  created_at        DateTime?  @default(now()) @db.Timestamp(6)
+  updated_at        DateTime?  @default(now()) @db.Timestamp(6)
+  conversa          conversa[]
+  usuario           usuario    @relation(fields: [id_usuario], references: [id_usuario], onDelete: NoAction, onUpdate: NoAction, map: "fk_usuario_canal_usuario")
+}

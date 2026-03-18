@@ -1,0 +1,14 @@
+CREATE ROLE chatpilot_admin WITH
+LOGIN
+SUPERUSER
+CREATEDB
+CREATEROLE
+PASSWORD 'Juskrilex@!#--q03209kdj';
+
+CREATE ROLE chatpilot_backend WITH
+LOGIN
+PASSWORD 'NFduiafgs655527@#%!@ytdacs532#@@w';
+
+CREATE ROLE chatpilot_dev WITH
+LOGIN
+PASSWORD 'as3ewed3d323!@#@adwd3rafdr';
