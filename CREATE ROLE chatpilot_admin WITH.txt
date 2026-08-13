@@ -12,3 +12,23 @@ PASSWORD 'NFduiafgs655527@#%!@ytdacs532#@@w';
 CREATE ROLE chatpilot_dev WITH
 LOGIN
 PASSWORD 'as3ewed3d323!@#@adwd3rafdr';
+
+CREATE ROLE chatpilot_readonly WITH
+LOGIN
+PASSWORD 'Chat@218963ahds!@dsahbPilot';
+
+GRANT CONNECT ON DATABASE chatpilot_db TO chatpilot_backend;
+GRANT CONNECT ON DATABASE chatpilot_db TO chatpilot_dev;
+GRANT CONNECT ON DATABASE chatpilot_db TO chatpilot_readonly;
+
+GRANT USAGE ON SCHEMA public TO chatpilot_backend;
+GRANT USAGE ON SCHEMA public TO chatpilot_dev;
+GRANT USAGE ON SCHEMA public TO chatpilot_readonly;
+
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON ALL TABLES IN SCHEMA public
+TO chatpilot_backend;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON TABLES TO chatpilot_backend;
