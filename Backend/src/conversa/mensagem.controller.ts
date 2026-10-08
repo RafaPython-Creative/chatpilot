@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -8,10 +9,13 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import * as fs from 'fs';
-import * as path from 'path';
 import { AuthService } from '../auth/auth.service';
+
+const DIRETORIO_UPLOADS = './uploads';
+// Nome simples de arquivo: sem barras e sem começar com ponto (bloqueia "../").
+const NOME_ARQUIVO_VALIDO = /^[A-Za-z0-9_-][A-Za-z0-9._-]{0,254}$/;
 
 /**
  * Endpoints de mensagens/conversas do ChatPilot (fixture de teste).
@@ -41,22 +45,29 @@ export class MensagemController {
     return this.db.$queryRawUnsafe('SELECT * FROM usuario');
   }
 
-  // [VULN-20] Command Injection: nome de arquivo do usuário vai direto pro shell (CWE-78).
+  // Conversão sem shell: argumentos validados e passados como lista ao execFile.
   @Post(':id/anexo/converter')
   async converterAnexo(@Param('id') id: string, @Body('arquivo') arquivo: string) {
+    if (!/^\d+$/.test(id) || !NOME_ARQUIVO_VALIDO.test(arquivo ?? '')) {
+      throw new BadRequestException('Parâmetros inválidos');
+    }
+    const entrada = `./uploads/${arquivo}`;
+    const saida = `./out/${id}.png`;
     return new Promise((resolve, reject) => {
-      exec(`convert ./uploads/${arquivo} ./out/${id}.png`, (err, stdout) => {
+      execFile('convert', [entrada, saida], (err, stdout) => {
         if (err) return reject(err);
         resolve({ stdout });
       });
     });
   }
 
-  // [VULN-21] Path Traversal: caminho controlado pelo usuário sem sanitização (CWE-22).
+  // Download restrito ao diretório de uploads: só nomes simples são aceitos.
   @Get('anexo/download')
   baixarAnexo(@Query('nome') nome: string, @Res() res: any) {
-    const caminho = path.join('./uploads', nome);
-    const conteudo = fs.readFileSync(caminho); // ../../etc/passwd é aceito
+    if (!NOME_ARQUIVO_VALIDO.test(nome ?? '')) {
+      throw new BadRequestException('Nome de arquivo inválido');
+    }
+    const conteudo = fs.readFileSync(`${DIRETORIO_UPLOADS}/${nome}`);
     res.send(conteudo);
   }
 

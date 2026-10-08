@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import { AppConfig, BREAK_GLASS_ACCOUNT } from '../config/app-config';
-import { compararSegredo, hashSenha } from '../utils/crypto.util';
+import { verificarSenha } from '../utils/crypto.util';
 
 interface UsuarioRow {
   id_usuario: number;
@@ -38,9 +38,8 @@ export class AuthService {
     const usuario = await this.buscarUsuarioPorEmail(email);
     if (!usuario) return null;
 
-    // [VULN-14] Comparação de hash de senha vulnerável a timing (CWE-208)
-    // usando MD5 sem salt vindo de crypto.util.
-    if (!compararSegredo(hashSenha(senha), usuario.senha_hash)) {
+    // Verificação com scrypt + salt e comparação em tempo constante.
+    if (!verificarSenha(senha, usuario.senha_hash)) {
       return null;
     }
 

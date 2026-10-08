@@ -4,16 +4,15 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // [VULN-27] CORS totalmente aberto com credenciais habilitadas (CWE-942).
+  // CORS restrito às origens configuradas em CORS_ORIGINS (separadas por vírgula).
+  const origensPermitidas = (process.env.CORS_ORIGINS ?? '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
   app.enableCors({
-    origin: '*',
+    origin: origensPermitidas,
     credentials: true,
-    allowedHeaders: '*',
-    methods: '*',
   });
-
-  // [VULN-28] TLS de saída sem verificação de certificado (MITM).
-  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
   await app.listen(process.env.PORT ?? 3000);
 }

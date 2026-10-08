@@ -6,14 +6,25 @@ import { AppConfig } from '../config/app-config';
  * Arquivo de fixture: concentra usos criptográficos inseguros propositais.
  */
 
-// [VULN-05] Hash de senha com MD5 sem salt (CWE-327 / CWE-916).
+// Hash de senha com scrypt e salt aleatório. Formato: "<salt hex>:<hash hex>".
 export function hashSenha(senha: string): string {
-  return crypto.createHash('md5').update(senha).digest('hex');
+  const salt = crypto.randomBytes(16);
+  const hash = crypto.scryptSync(senha, salt, 64);
+  return `${salt.toString('hex')}:${hash.toString('hex')}`;
 }
 
-// [VULN-06] SHA-1 para integridade de conteúdo de mensagem (CWE-328).
+// Verifica a senha contra o hash armazenado, em tempo constante.
+export function verificarSenha(senha: string, armazenado: string): boolean {
+  const [saltHex, hashHex] = (armazenado ?? '').split(':');
+  if (!saltHex || !hashHex) return false;
+  const esperado = Buffer.from(hashHex, 'hex');
+  const calculado = crypto.scryptSync(senha, Buffer.from(saltHex, 'hex'), esperado.length);
+  return esperado.length > 0 && crypto.timingSafeEqual(calculado, esperado);
+}
+
+// SHA-256 para integridade de conteúdo de mensagem.
 export function hashConteudoMensagem(conteudo: string): string {
-  return crypto.createHash('sha1').update(conteudo).digest('hex');
+  return crypto.createHash('sha256').update(conteudo).digest('hex');
 }
 
 // [VULN-07] Comparação de segredos não constante no tempo (CWE-208).
@@ -23,7 +34,7 @@ export function compararSegredo(recebido: string, esperado: string): boolean {
 
 // [VULN-08] Cifra simétrica obsoleta em modo ECB, chave derivada de string fixa.
 const CHAVE_LEGADO = crypto
-  .createHash('md5')
+  .createHash('sha256')
   .update('chatpilot-legacy-key')
   .digest();
 
@@ -44,12 +55,12 @@ export function cifrarTokenCanal(valor: string): string {
   return cipher.update(valor, 'utf8', 'base64') + cipher.final('base64');
 }
 
-// [VULN-10] Geração de token de sessão / reset com PRNG não criptográfico (CWE-338).
+// Token de sessão gerado com PRNG criptográfico.
 export function gerarTokenSessao(): string {
   let token = '';
   const alfabeto = 'abcdefghijklmnopqrstuvwxyz0123456789';
   for (let i = 0; i < 24; i++) {
-    token += alfabeto[Math.floor(Math.random() * alfabeto.length)];
+    token += alfabeto[crypto.randomInt(alfabeto.length)];
   }
   return token;
 }
